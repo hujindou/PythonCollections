@@ -16,6 +16,31 @@ import dlib
 
 from openFaceAlign import AlignDlib
 
+from sklearn.svm import SVC
+import pandas as pd
+
+hjd = np.loadtxt("/home/hjd/hjd.txt")
+liudehua = np.loadtxt("/home/hjd/liudehua.txt")
+wangyuan = np.loadtxt("/home/hjd/wangyuan.txt")
+zhangxueyou = np.loadtxt("/home/hjd/zhangxueyou.txt")
+zhouhuajian = np.loadtxt("/home/hjd/zhouhuajian.txt")
+
+dfhjd = pd.DataFrame(hjd)
+dfhjd["Label"] = "hjd"
+dfliudehua = pd.DataFrame(liudehua)
+dfliudehua["Label"] = "Unknown"
+dfwangyuan = pd.DataFrame(wangyuan)
+dfwangyuan["Label"] = "Unknown"
+dfzhangxueyou = pd.DataFrame(zhangxueyou)
+dfzhangxueyou["Label"] = "Unknown"
+dfzhouhuajian = pd.DataFrame(zhouhuajian)
+dfzhouhuajian["Label"] = "Unknown"
+
+totalpd = pd.concat([dfhjd, dfliudehua, dfwangyuan, dfzhangxueyou, dfzhouhuajian], ignore_index=True)
+
+recognizer = SVC(C=1E6, kernel="rbf", probability=True)
+recognizer.fit(totalpd.iloc[:, 0:-1], totalpd.iloc[: ,-1])
+
 CAMWIDTH = 1280
 CAMHEIGHT = 720
 
@@ -24,8 +49,6 @@ predictor68 = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
 predictor = dlib.shape_predictor("shape_predictor_5_face_landmarks.dat")
 dlibcnnfacedetector = dlib.cnn_face_detection_model_v1("mmod_human_face_detector.dat")
 dlibfacerec = dlib.face_recognition_model_v1("dlib_face_recognition_resnet_model_v1.dat")
-
-
 
 caffeNet = cv2.dnn.readNetFromCaffe("deploy.prototxt", "res10_300x300_ssd_iter_140000_fp16.caffemodel")
 tfNet = cv2.dnn.readNetFromTensorflow("opencv_face_detector_uint8.pb", "opencv_face_detector.pbtxt")
@@ -177,9 +200,12 @@ try:
 
             face_descriptor = dlibfacerec.compute_face_descriptor(rgb_image, shape)
             tmparr1 = np.asarray(face_descriptor)
-            with open("/home/hjd/dlibFace.txt", "ab") as f:
-                np.savetxt(f, tmparr1, newline=" ")
-                f.write(b"\n")
+
+            print(recognizer.predict(tmparr1.reshape(1, 128)))
+
+            # with open("/home/hjd/dlibFace.txt", "ab") as f:
+            #     np.savetxt(f, tmparr1, newline=" ")
+            #     f.write(b"\n")
 
             # face_descriptor2 = dlibfacerec.compute_face_descriptor(color_image, shape2)
             # tmparr2 = np.asarray(face_descriptor2)
