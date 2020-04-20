@@ -3,6 +3,15 @@ import os
 import dlib
 import glob
 import numpy as np
+import cv2
+
+fs_read = cv2.FileStorage('cvResult.xml', cv2.FILE_STORAGE_READ)
+arr_read = fs_read.getNode('matdata').mat()
+fs_read.release()
+
+print(arr_read.shape)
+print(arr_read.dtype)
+exit(0)
 
 fileExtensions = ['*.jpeg', '*.png', '*.jpg']
 
@@ -32,6 +41,8 @@ if debugFlag:
     pass
 
 totalProcessImage = 0
+
+cvList = []
 
 for tmpFileExtension in fileExtensions:
 
@@ -63,6 +74,7 @@ for tmpFileExtension in fileExtensions:
             face_descriptor = facerec.compute_face_descriptor(img, shape)
 
             nparr = np.asarray(face_descriptor)
+            cvList.append(nparr.reshape(128).astype(np.float32))
             with open(os.path.join(imagePath, "128Data.txt"), "ab") as filewriter:
                 np.savetxt(filewriter, nparr, newline=" ")
                 filewriter.write(b"\n")
@@ -83,5 +95,9 @@ for tmpFileExtension in fileExtensions:
 
         pass
     pass
+
+fs_write = cv2.FileStorage('cvResult.xml', cv2.FILE_STORAGE_WRITE)
+fs_write.write("matdata", np.array(cvList))
+fs_write.release()
 
 print(totalProcessImage, "image processed")
