@@ -185,32 +185,7 @@ def randMove1Step(pGridState):
     return resGridState
 
 
-gridState = [(np.array([[1, 0], [1, 1], [1, 2]]), VMove, False),
-             (np.array([[2, 0], [3, 0]]), HMove, False),
-             (np.array([[4, 0], [4, 1]]), VMove, False),
-             (np.array([[2, 1], [2, 2]]), VMove, False),
-             (np.array([[3, 1], [3, 2]]), VMove, True),
-             (np.array([[4, 2], [5, 2]]), HMove, False),
-
-             (np.array([[3, 3], [4, 3], [5, 3]]), HMove, False),
-             (np.array([[2, 4], [3, 4]]), HMove, False),
-             (np.array([[4, 4], [5, 4]]), HMove, False),
-             ]
-
-# simplify
-gridState = [
-    (np.array([[3, 1], [3, 2]]), VMove, True),
-
-    (np.array([[3, 3], [4, 3], [5, 3]]), HMove, False),
-    (np.array([[2, 4], [3, 4]]), HMove, False),
-    (np.array([[4, 4], [5, 4]]), HMove, False),
-]
-
-tree = []
-tree.append([gridState])
-foundFlag = False
-
-
+# dfs search use
 def removeTreesBottomsFirstItem(pTree):
     lastIdx = len(pTree) - 1
     childDelFlag = False
@@ -234,9 +209,206 @@ def removeTreesBottomsFirstItem(pTree):
     pass
 
 
+class BFSNode:
+    def __init__(self):
+        self.currentState = None
+        self.previousNode = None
+        self.children = None
+        self.level = 0
+        pass
+
+    pass
+
+
+def FindSibling(rootNode, searchLevel):
+    return None
+
+
+def FindDuplicate(root, tmpstate):
+    if isStateEqual(root.currentState, tmpstate):
+        return root
+
+    for child in root.children:
+        if isStateEqual(child.currentState, tmpstate):
+            return child
+
+        if child.children is not None and len(child.children) > 0:
+            tmpres = FindDuplicate(child, tmpstate)
+            if tmpres is not None:
+                return tmpres
+
+    return None
+
+
+def FindDuplicate2(duplist, tmpstate):
+    for child in duplist:
+        if isStateEqual(child.currentState, tmpstate):
+            return child
+    return None
+
+
+def FindFromTopToBot(root, searchLevel):
+    for child in root.children:
+        if child.level < searchLevel:
+            if child.children is not None and len(child.children) > 0:
+                tmpres = FindFromTopToBot(child, searchLevel)
+                if tmpres is not None:
+                    return tmpres
+            pass
+        else:
+            if child.children is not None and len(child.children) == 0:
+                return child
+        pass
+
+    return None
+
+teststart = datetime.datetime.now()
+
+# not finish
+def bfsSearch(pNode):
+    dplst = []
+    baseNode = BFSNode()
+    baseNode.currentState = pNode
+    baseNode.children = []
+    baseNode.level = 0
+    dplst.append(baseNode)
+
+    reslist = ItrAllNextRnd(pNode)
+    for tmpitem in reslist:
+        tmpnode = BFSNode()
+        tmpnode.currentState = tmpitem
+        tmpnode.children = []
+        tmpnode.previousNode = baseNode
+        tmpnode.level = baseNode.level + 1
+        baseNode.children.append(tmpnode)
+        dplst.append(tmpnode)
+        pass
+
+    itrIdx = 0
+    itrNode = baseNode.children[itrIdx]
+    # current filling level
+    currentLevel = 1
+    while True:
+        #runing 120 seconds
+        # if (datetime.datetime.now() - teststart).seconds > 120:
+        #     print("*Duplicate List Length ", len(dplst))
+        #     return
+
+        if itrNode.children is None:
+            # dead node
+            pass
+        elif len(itrNode.children) == 0:
+            # fill children
+            tmplist = ItrAllNextRnd(itrNode.currentState)
+            toaddlist = []
+            for tmpstate in tmplist:
+                # if target state found return
+                # return (itrNode,tmpstate)
+                if matrixView(tmpstate)[:, 3].sum() == 18:
+                    print("Found ...")
+                    return (itrNode, tmpstate)
+
+                # tmpsearchres = FindDuplicate(baseNode, tmpstate)
+                tmpsearchres = FindDuplicate2(dplst, tmpstate)
+                if tmpsearchres is None:
+                    # do not add child inside loop
+                    toaddlist.append(tmpstate)
+                pass
+            if len(toaddlist) > 0:
+                for tmpstate in toaddlist:
+                    tmpnode = BFSNode()
+                    tmpnode.currentState = tmpstate
+                    tmpnode.children = []
+                    tmpnode.previousNode = itrNode
+                    tmpnode.level = itrNode.level + 1
+                    itrNode.children.append(tmpnode)
+                    dplst.append(tmpnode)
+                    if len(dplst) % 100 == 0:
+                        print("Duplicate List Reach",len(dplst),datetime.datetime.now())
+                        pass
+                    # if (datetime.datetime.now() - teststart).seconds > 120:
+                    #     print("Duplicate List Length ", len(dplst))
+                    #     return
+                    pass
+            else:
+                # this node is dead node
+                itrNode.children = None
+
+            # find itrNode sibling node
+            itrIdx += 1
+            if itrIdx >= len(itrNode.previousNode.children):
+                itrNode = FindFromTopToBot(baseNode, currentLevel)
+                if itrNode is None:
+                    currentLevel += 1
+                    print("Current Level ", currentLevel, datetime.datetime.now())
+                    itrIdx = 0
+                    itrNode = FindFromTopToBot(baseNode, currentLevel)
+                    pass
+            else:
+                itrNode = itrNode.previousNode.children[itrIdx]
+            pass
+        else:
+            # this node is full
+            pass
+        pass
+    pass
+
+
+gridState = [(np.array([[1, 0], [1, 1], [1, 2]]), VMove, False),
+             (np.array([[2, 0], [3, 0]]), HMove, False),
+             (np.array([[4, 0], [4, 1]]), VMove, False),
+             (np.array([[2, 1], [2, 2]]), VMove, False),
+             (np.array([[3, 1], [3, 2]]), VMove, True),
+             (np.array([[4, 2], [5, 2]]), HMove, False),
+
+             (np.array([[3, 3], [4, 3], [5, 3]]), HMove, False),
+             (np.array([[2, 4], [3, 4]]), HMove, False),
+             (np.array([[4, 4], [5, 4]]), HMove, False),
+             ]
+
+# simplify
+# gridState = [
+#     (np.array([[0, 0], [0, 1]]), VMove, False),
+#     (np.array([[3, 1], [3, 2]]), VMove, True),
+#
+#     (np.array([[3, 3], [4, 3], [5, 3]]), HMove, False),
+#     (np.array([[2, 4], [3, 4]]), HMove, False),
+#     (np.array([[4, 4], [5, 4]]), HMove, False),
+# ]
+
+# import cProfile
+#
+# pr = cProfile.Profile()
+# pr.enable()
+
+nd, lst = bfsSearch(gridState)
+# bfsSearch(gridState)
+# pr.disable()
+# pr.print_stats(sort="tottime")
+# exit()
+dsp = []
+dsp.append(lst)
+while nd is not None:
+    dsp.append(nd.currentState)
+    nd = nd.previousNode
+    pass
+for tmpidx in range(len(dsp) - 1, -1, -1):
+    DisplayGridState(dsp[tmpidx])
+    pass
+exit()
+
+
+tree = []
+tree.append([gridState])
+foundFlag = False
+
 print("Iteration Started ", datetime.datetime.now())
 
 while True:
+    if (datetime.datetime.now() - teststart).seconds > 120:
+        pr.disable()
+        pr.print_stats(sort="tottime")
+        exit()
     reslist = ItrAllNextRnd(tree[-1][0])
 
     # remove duplicated node
@@ -263,7 +435,7 @@ while True:
             print("Iteration Finished ", datetime.datetime.now())
             break
     else:
-        #tree.append(reslist)
+        # tree.append(reslist)
 
         for tmpitm in reslist:
             if matrixView(tmpitm)[:, 3].sum() == 18:
